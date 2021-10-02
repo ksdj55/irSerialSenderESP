@@ -1,8 +1,12 @@
 
 #include <ESP8266WiFi.h>
 #include <WiFiUdp.h>
-#include "wifi_password.h"
+#include "wifi_password.h" //Please comment this out, for storing wifi password in other file.
 
+#ifndef STASSID
+#define STASSID "YOUR_WIFI_SSID"
+#define STAPSK  "YOUR_WIFI_PASSWORD"
+#endif
 
 #define MAXSIZE  8192
 
