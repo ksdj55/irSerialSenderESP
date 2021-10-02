@@ -9,4 +9,4 @@ Send these string back via Serial terminal or Wifi UDP socket to send an IR remo
 
 A accompanying Android Remote Application and construction plan will follow shortly.
 
-Based on code from : https://learn.adafruit.com/ir-sensor/ir-remote-signals (public domain)
+Based on code from : http://www.ladyada.net/learn/sensors/ir.html (public domain)
