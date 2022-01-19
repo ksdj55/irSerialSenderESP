@@ -1,7 +1,6 @@
 
 #include <ESP8266WiFi.h>
-//#include <WiFiUdp.h>
-#include "wifi_password.h" //Please comment this out, for storing wifi password in other file.
+#include "wifi_password.h" //Please comment this out, used for storing wifi password in other file.
 
 #ifndef STASSID
 #define STASSID "YOUR_WIFI_SSID"
@@ -10,8 +9,8 @@
 
 #define MAXSIZE  8192
 
-unsigned int localPort = 8888;      // local port to listen on
-IPAddress ip(192,168,1,31);
+unsigned int localPort = 8888;      //Local port to listen on
+IPAddress ip(192,168,1,31);         //Fixed IP address
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 
@@ -19,17 +18,12 @@ WiFiServer server(localPort);
 WiFiClient client;
 bool isconnected = false;
 
-// buffers for receiving and sending data
-//char packetBuffer[MAXSIZE + 1]; //buffer to hold incoming packet,
-//char  ReplyBuffer[] = "acknowledged\r\n";       // a string to send back
-
-//WiFiUDP Udp;
-
+// Modified from this IR code.
 // See the full tutorial at http://www.ladyada.net/learn/sensors/ir.html
 // this code is public domain, please enjoy!
 
 //#define IRpin_PIN      PIND
-#define IRpin          16
+#define IRpin          16  //IR Receiver Photo Transistor Pin
 
 // the maximum pulse we'll listen for - 65 milliseconds is a long time
 #define MAXPULSE 65000
@@ -44,8 +38,8 @@ uint16_t pulses[100][2];  // pair is high and low pulse
 uint8_t currentpulse = 0; // index for pulses we're storing
 uint8_t maxPulseCount = 99;
  
-int IRledPin =  5;    // LED connected to digital pin 13
-int IndLedPin = 2;
+int IRledPin =  5;    //IR LED connected to digital pin GPIO5
+int IndLedPin = 2;    //On-board indicicator LED pin
 
 String buff;
 int count = 0;
@@ -74,7 +68,6 @@ void setup()   {
   Serial.print("Connected! IP address: ");
   Serial.println(WiFi.localIP());
   Serial.printf("UDP server on port %d\n", localPort);
-  //Udp.begin(localPort);
   server.begin();
   digitalWrite(IndLedPin, HIGH);
 }
@@ -86,50 +79,13 @@ void loop()
     if(Serial.available() > 0) {
       char c = Serial.read();
       receivedChar(c);
-      /*if(c == 'x') { //Send Command
-        Serial.println(count);
-        sendData();
-        count = 0;
-        clearData();
-      } else if (c == ',') { //Delimiter
-        data[count] = buff.toInt();
-        buff = "";
-        count++;
-      } else if (c == 'r') { //Switch to Receive Mode
-        Serial.println("Ready to decode IR!");
-        recordMode = true;
-      } else {
-        buff = buff + c;
-      }*/
-      //Serial.println((int)c);
     }
   } else { //Record Mode
     record();
-    //recordMode = false;
   }
 
   //Network
   // if there's data available, read a packet
-  /*int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    Serial.printf("Received packet of size %d from %s:%d\n    (to %s:%d, free heap = %d B)\n",
-                  packetSize,
-                  Udp.remoteIP().toString().c_str(), Udp.remotePort(),
-                  Udp.destinationIP().toString().c_str(), Udp.localPort(),
-                  ESP.getFreeHeap());
-
-    // read the packet into packetBufffer
-    int n = Udp.read(packetBuffer, MAXSIZE);
-    packetBuffer[n] = 0;
-    Serial.println("Contents:");
-    Serial.println(packetBuffer);
-    receivedPacket(packetBuffer);
-
-    // send a reply, to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write(ReplyBuffer);
-    Udp.endPacket();*/
-
     
     //TCP Network
     if(client) {
@@ -153,9 +109,9 @@ void loop()
 }
 
 void receivedChar(char c) {
-  if(c == 'x') { //Send Command
+  if(c == 'x') { //Send IR Command
         Serial.println(count);
-        sendUdpInt(count);
+        writeTcpInt(count);
         sendData();
         count = 0;
         clearData();
@@ -164,47 +120,27 @@ void receivedChar(char c) {
         data[count] = buff.toInt();
         buff = "";
         count++;
-      } else if (c == 'r') { //Switch to Receive Mode
+      } else if (c == 'r') { //Switch to Record Mode
         Serial.println("Ready to decode IR!");
-        sendUdp("Ready to decode IR!\n");
-        recordMode = true;
-        //while(recordMode) {
-          //record();
-        //}
-        //break;
+        sendTcp("Ready to decode IR!\n");
+        recordMode = true; 
       } else {
         buff = buff + c;
       }
 }
 
-void sendUdp(char d[]) {
-  /*Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  Udp.write(d);
-  Udp.endPacket();*/
+void sendTcp(char d[]) {
   if(client) {
     if(client.connected()) {
-      /*for(byte i = 0; i < 100; i++) {
-        if(d[i] == 0) { 
-          return; 
-        }
-        client.write(d[i]);
-      }*/
       client.write(d);
     }
   }
 }
 
-void sendUdpInt(int num) {
+void writeTcpInt(int num) {
   char c[16];
   itoa(num, c, 10);
-  sendUdp(c);
-}
-
-void writeUdpInt(int num) {
-  char c[16];
-  itoa(num, c, 10);
-  //Udp.write(c);
-  sendUdp(c);
+  sendTcp(c);
 }
 
 void clearData() {
@@ -215,7 +151,7 @@ void clearData() {
 
 void sendData() {
   for(int i=0;i<count;i++) {
-    if(i%2 > 0){
+    if(i%2 > 0){  //Odd number
       pulseIR(data[i], true);
     }else{
       //delayMicroseconds(data[i]);
@@ -252,14 +188,11 @@ void record() {
        }
     }
     // we didn't time out so lets stash the reading
-    digitalWrite(IndLedPin, LOW);
+    digitalWrite(IndLedPin, LOW); //Light the on-board LED
     pulses[currentpulse][0] = highpulse;
    
     // same as above
-    //Serial.println("P3");
     while (!digitalRead(IRpin)) {
-      //Serial.println("P4");
-    //while (! (IRpin_PIN & _BV(IRpin))) {
        // pin is still LOW
        lowpulse++;
        delayMicroseconds(RESOLUTION - 2);
@@ -272,11 +205,11 @@ void record() {
          return;
        }
     }
-    digitalWrite(IndLedPin, HIGH);
+    digitalWrite(IndLedPin, HIGH); 
     pulses[currentpulse][1] = lowpulse;
     
     // we read one high-low pulse successfully, continue!
-    currentpulse++;Serial.println("P6");
+    currentpulse++;
     if(currentpulse > maxPulseCount) {
       currentpulse = 0;
       printpulses();
@@ -313,19 +246,18 @@ void pulseIR(long microsecs, bool ir) {
 
 void printpulses(void) {
   Serial.println("printpulses()");
-  //Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  //Udp.write("[");
+
   client.write("[");
   for (uint8_t i = 0; i < currentpulse; i++) {   
-    writeUdpInt(pulses[i][0] * RESOLUTION); //OFF time
+    writeTcpInt(pulses[i][0] * RESOLUTION); //OFF time
     client.write(",");
-    writeUdpInt(pulses[i][1] * RESOLUTION); //ON time
+    writeTcpInt(pulses[i][1] * RESOLUTION); //ON time
     client.write(",");
   }
   client.write("x]\n");
-  //Udp.endPacket();*/
+
   recordMode = false;
-  //sendUdp("Ready to send.");
+  //sendTcp("Ready to send.");
   
   Serial.println("\n\r\n\rReceived: \n\rOFF \tON");
   Serial.println(currentpulse, DEC);
