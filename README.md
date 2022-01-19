@@ -1,9 +1,9 @@
 # irSerialSenderESP
 IR remote control record/sender for ESP8266 (nodeMCU)
 
-This program can record and replay 38 kHz IR remote control signal using normal IR led and IR photodiode through serial port or Wifi UDP socket.
+This program can record and replay 38 kHz IR remote control signal using normal IR led and IR photodiode through serial port or Wifi TCP socket.
 
-Command 'r' will switch device to recording mode and when the IR pulse train is received the IR pulse recording string [ON_Time,OFF_Time,ON_Time,OFF_Time...,x] will be send back via Serial terminal or Wifi UDP socket, copy and save it for each remote button.
+Command 'r' will switch device to recording mode and when the IR pulse train is received the IR pulse recording string [ON_Time,OFF_Time,ON_Time,OFF_Time...,x] will be send back via Serial terminal or Wifi TCP socket, copy and save it for each remote button.
 
 Send these string back via Serial terminal or Wifi TCP socket to send an IR remote command.
 
